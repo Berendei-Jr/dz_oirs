@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
+from scipy.signal import spectrogram
 from statsmodels.graphics import tsaplots
 
 LINES_TO_PROCESS = 12000
@@ -36,13 +37,12 @@ with open('EDA.csv') as csv_file:
             line += 1
     minutes_of_measurment = LINES_TO_PROCESS/frequency/60
     minutes_array.pop(-1)
-    plt.plot(minutes_array, data)
+    '''plt.plot(minutes_array, data)
     plt.xlabel('Минуты')
     plt.ylabel('Электродермальная активность (мкСм)')
     plt.title('Зависимость данных датчика электродермальной активности от времени')
-    plt.grid()
-    #plt.show()
-    plt.clf()
+    plt.grid()'''
+
 
     expected_value = sum(data)/len(data)
     print(f'Математическое ожидание: {expected_value}')
@@ -65,13 +65,26 @@ with open('EDA.csv') as csv_file:
     print(f'Размах: {ds_range}')
 
     #plot autocorrelation function
-    #fig = tsaplots.plot_acf(data, lags=1000)
-    acf = sm.tsa.acf(data)
-    plt.figure(figsize=(16,12), dpi=150)
-    #pd.plotting.autocorrelation_plot(grouped_data['total']).plot()
+    pd_data = pd.DataFrame(data, columns=['Показания датчика (мкСм)'])
+    '''plt.figure(figsize=(16,12), dpi=150)
+    pd.plotting.autocorrelation_plot(pd_data['Показания датчика (мкСм)']).plot()
     plt.xlabel('Лаг')
     plt.ylabel('Автокорреляция')
     plt.xticks(rotation=90)
-    plt.show()
-    plt.savefig('2.jpg', format ='jpg', dpi=300)
-    #plt.show()
+    plt.show()'''
+
+    window_sizes = [2, 3, 4, 5, 6, 7, 8, 10, 12, 16,
+                32]  # Пример различных размеров окон
+
+    # Применение окон различных размеров для STFT и построение спектрограммы для каждого
+    for size in window_sizes:
+        frequencies, time_segments, stft_data = spectrogram(data,
+                                                            fs=1.0,
+                                                            nperseg=size)
+        plt.figure(figsize=(8, 6))
+        plt.pcolormesh(time_segments, frequencies, np.log(stft_data))
+        plt.title(f'STFT с окном размера {size}')
+        plt.xlabel('Время')
+        plt.ylabel('Частота')
+        plt.colorbar().set_label('Логарифм амплитуды')
+        plt.show()
